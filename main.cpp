@@ -1,6 +1,5 @@
 #include <cstdlib>
 #include <iostream>
-
 #include "Client.h"
 #include "Product.h"
 #include "Sale.h"

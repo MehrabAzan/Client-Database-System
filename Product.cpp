@@ -1,5 +1,4 @@
 #include "Product.h"
-
 #include <cstdlib>
 #include <cstdio>
 #include <iostream>

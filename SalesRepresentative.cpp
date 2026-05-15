@@ -1,5 +1,4 @@
 #include "SalesRepresentative.h"
-
 #include <cstdlib>
 #include <cstdio>
 #include <iostream>
