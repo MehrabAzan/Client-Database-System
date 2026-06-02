@@ -1,6 +1,6 @@
 #include "SalesRepresentative.h"
+#include "Database.h"
 #include <cstdlib>
-#include <cstdio>
 #include <iostream>
 
 using namespace std;
@@ -27,38 +27,44 @@ void SalesRepresentative::SalesRepresentativeMenu(){
     case 1:{
       system("cls");
       PrintSalesRepresentatives();
+      break;
     }
     case 2:{
       system("cls");
       PrintSalesRepresentative();
+      break;
     }
     case 3:{
       system("cls");
       AddSalesRepresentative();
+      break;
     }
     case 4:{
       system("cls");
       ChangeSalesRepresentativeInfo();
+      break;
     }
     case 5:{
       system("cls");
       SalesBonus();
+      break;
     }
     case 6:{
       system("cls");
       MainMenu();
+      break;
     }
     default:{
       system("cls");
       cout << "Invalid option" << endl;
       SalesRepresentativeMenu();
+      break;
     }
   }
 }
 
 void SalesRepresentative::AddSalesRepresentative(){
-  salesRepresentativesFS.open("SalesRepresentatives.txt", ios::app);
-
+  sqlite3_stmt* statement = nullptr;
 
   cout << "Enter the name (don't add middle name): ";
   cin >> firstName >> lastName;
@@ -69,36 +75,47 @@ void SalesRepresentative::AddSalesRepresentative(){
   cout << "Enter the sales: $";
   cin >> sales;
 
-  salesRepresentativesFS << emailAddress << " " << firstName << " " << lastName << " " << shortAddress  << " " << sales << endl;
+  const char* sql =
+    "INSERT INTO sales_representatives (email, first_name, last_name, address, sales) "
+    "VALUES (?, ?, ?, ?, ?);";
 
-  salesRepresentativesFS.close();
+  if (Database::Prepare(sql, &statement, "adding sales representative")) {
+    sqlite3_bind_text(statement, 1, emailAddress.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(statement, 2, firstName.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(statement, 3, lastName.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(statement, 4, shortAddress.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(statement, 5, sales);
+
+    Database::StepDone(statement, "adding sales representative");
+    sqlite3_finalize(statement);
+  }
 
   SalesRepresentativeMenu();
 }
 
 void SalesRepresentative::PrintSalesRepresentatives(){
-  int temp = 1;
+  sqlite3_stmt* statement = nullptr;
+  int counter = 0;
 
-  salesRepresentativesFS.open("SalesRepresentatives.txt", ios::in);
+  const char* sql =
+    "SELECT first_name, last_name, address, email, sales "
+    "FROM sales_representatives "
+    "ORDER BY last_name, first_name;";
 
-  if (!salesRepresentativesFS){
-    cout << "No sales representatives in the database" << endl;
-    salesRepresentativesFS.close();
-  }
-
-
-  if (salesRepresentativesFS.is_open()){
-    while (salesRepresentativesFS >> emailAddress >> firstName >> lastName >> shortAddress >> sales){
-      cout << "Name: " << firstName << " " << lastName << endl;
-      cout << "Address: " << shortAddress << endl;
-      cout << "Email address: " << emailAddress << endl;
-      cout << "Sales: $" << sales << endl;
+  if (Database::Prepare(sql, &statement, "listing sales representatives")) {
+    while (sqlite3_step(statement) == SQLITE_ROW) {
+      cout << "Name: " << Database::ColumnText(statement, 0) << " " << Database::ColumnText(statement, 1) << endl;
+      cout << "Address: " << Database::ColumnText(statement, 2) << endl;
+      cout << "Email address: " << Database::ColumnText(statement, 3) << endl;
+      cout << "Sales: $" << sqlite3_column_int(statement, 4) << endl;
       cout << endl;
+      counter++;
     }
-    salesRepresentativesFS.close();
+
+    sqlite3_finalize(statement);
   }
 
-  if (temp == 0){
+  if (counter == 0){
     cout << "No sales representatives in the database" << endl;
   }
 
@@ -106,75 +123,72 @@ void SalesRepresentative::PrintSalesRepresentatives(){
 }
 
 void SalesRepresentative::PrintSalesRepresentative(){
-    string inputEmailAddress;
-    int counter = 0;
+  string inputEmailAddress;
+  sqlite3_stmt* statement = nullptr;
 
-    salesRepresentativesFS.open("SalesRepresentatives.txt", ios::in);
+  cout << "Enter the sales representative's email address: ";
+  cin >> inputEmailAddress;
 
-    cout << "Enter the sales representative's email address: ";
-    cin >> inputEmailAddress;
+  const char* sql =
+    "SELECT first_name, last_name, address, email, sales "
+    "FROM sales_representatives "
+    "WHERE email = ?;";
 
-    while (!salesRepresentativesFS.eof()){
-      salesRepresentativesFS >> emailAddress >> firstName >> lastName >> shortAddress >> sales;
-      if (emailAddress == inputEmailAddress){
-        cout << "Name: " << firstName << " " << lastName << endl;
-        cout << "Address: " << shortAddress << endl;
-        cout << "Email address: " << emailAddress << endl;
-        cout << "Sales: $" << sales << endl << endl;
-        counter++;
-        break;
-      }
+  if (Database::Prepare(sql, &statement, "finding sales representative")) {
+    sqlite3_bind_text(statement, 1, inputEmailAddress.c_str(), -1, SQLITE_TRANSIENT);
+
+    if (sqlite3_step(statement) == SQLITE_ROW) {
+      cout << "Name: " << Database::ColumnText(statement, 0) << " " << Database::ColumnText(statement, 1) << endl;
+      cout << "Address: " << Database::ColumnText(statement, 2) << endl;
+      cout << "Email address: " << Database::ColumnText(statement, 3) << endl;
+      cout << "Sales: $" << sqlite3_column_int(statement, 4) << endl << endl;
     }
-
-    salesRepresentativesFS.close();
-
-    if (counter == 0){
+    else {
       cout << "Invalid sales representative" << endl << endl;
     }
 
-    SalesRepresentativeMenu();
+    sqlite3_finalize(statement);
+  }
+
+  SalesRepresentativeMenu();
 }
 
 void SalesRepresentative::ChangeSalesRepresentativeInfo(){
-  fstream tempFS;
+  sqlite3_stmt* statement = nullptr;
   string oldEmailAddress, newFirstName, newLastName, newShortAddress, newEmailAddress;
-  int newSales, counter = 0;
+  int newSales;
 
   cout << "Enter the sales representative's old email: ";
   cin >> oldEmailAddress;
+  cout << "Enter new sales representatives's email: ";
+  cin >> newEmailAddress;
+  cout << "Enter new name (don't add middle name): ";
+  cin >> newFirstName >> newLastName;
+  cout << "Enter new address (no spaces): ";
+  cin >> newShortAddress;
+  cout << "Enter new sales amount: $";
+  cin >> newSales;
 
-  salesRepresentativesFS.open("SalesRepresentatives.txt", ios::in);
-  tempFS.open("TempSalesRepresentatives.txt", ios::app | ios::out);
+  const char* sql =
+    "UPDATE sales_representatives "
+    "SET email = ?, first_name = ?, last_name = ?, address = ?, sales = ? "
+    "WHERE email = ?;";
 
-  while(salesRepresentativesFS >> emailAddress >> firstName >> lastName >> shortAddress >> sales){
-    if (emailAddress != oldEmailAddress){
-      tempFS << emailAddress << " " << firstName << " " << lastName << " " << shortAddress  << " " << sales << endl;
-    }
-    else{
-      cout << "Enter new sales representatives's email: ";
-      cin >> newEmailAddress;
-      cout << "Enter new name (don't add middle name): ";
-      cin >> newFirstName >> newLastName;
-      cout << "Enter new address (no spaces): ";
-      cin >> newShortAddress;
-      cout << "Enter new sales amount: $";
-      cin >> newSales;
+  if (Database::Prepare(sql, &statement, "updating sales representative")) {
+    sqlite3_bind_text(statement, 1, newEmailAddress.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(statement, 2, newFirstName.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(statement, 3, newLastName.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(statement, 4, newShortAddress.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(statement, 5, newSales);
+    sqlite3_bind_text(statement, 6, oldEmailAddress.c_str(), -1, SQLITE_TRANSIENT);
 
-      tempFS << newEmailAddress << " " << newFirstName << " " << newLastName << " " << newShortAddress << " " << newSales << endl;
+    Database::StepDone(statement, "updating sales representative");
+    sqlite3_finalize(statement);
 
-      counter++;
+    if (sqlite3_changes(Database::Connection()) == 0){
+      cout << "Invalid sales representative" << endl << endl;
     }
   }
-
-  if (counter == 0){
-    cout << "Invalid sales representative" << endl << endl;
-  }
-
-  salesRepresentativesFS.close();
-  tempFS.close();
-  
-  remove("SalesRepresentatives.txt");
-  rename("TempSalesRepresentatives.txt", "SalesRepresentatives.txt");
 
   SalesRepresentativeMenu();
 }

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <fstream>
 #include <string>
 
 class Sale{
@@ -14,5 +13,4 @@ class Sale{
   private:
     std::string clientFirstName, clientLastName, productName, salesRepresentativeFirstName, salesRepresentativeLastName, month;
     int year, day;
-    std::fstream salesFS;
 };

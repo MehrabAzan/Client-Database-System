@@ -1,6 +1,6 @@
 #include "Sale.h"
+#include "Database.h"
 #include <cstdlib>
-#include <cstdio>
 #include <iostream>
 
 using namespace std;
@@ -26,33 +26,39 @@ void Sale::SaleMenu(){
     case 1:{
       system("cls");
       SalesFromYear();
+      break;
     }
     case 2:{
       system("cls");
       AddSale();
+      break;
     }
     case 3:{
       system("cls");
       SalesFromYearFromSpecificClient();
+      break;
     }
     case 4:{
       system("cls");
       ChangeSaleInfo();
+      break;
     }
     case 5:{
       system("cls");
       MainMenu();
+      break;
     }
     default:{
       system("cls");
       cout << "Invalid option" << endl;
       SaleMenu();
+      break;
     }
   }
 }
 
 void Sale::AddSale(){
-  salesFS.open("Sales.txt", ios::app);
+  sqlite3_stmt* statement = nullptr;
 
   cout << "Enter the client (don't add middle name): ";
   cin >> clientFirstName >> clientLastName;
@@ -67,34 +73,56 @@ void Sale::AddSale(){
   cout << "Enter the day in the month this sale occured: ";
   cin >> day;
 
-  salesFS << productName << " " << clientFirstName << " " << clientLastName << " " << salesRepresentativeFirstName << " " << salesRepresentativeLastName  << " " << month << " " << day << " " << year << endl;
+  const char* sql =
+    "INSERT INTO sales (product_name, client_first_name, client_last_name, "
+    "sales_rep_first_name, sales_rep_last_name, month, day, year) "
+    "VALUES (?, ?, ?, ?, ?, ?, ?, ?);";
 
-  salesFS.close();
+  if (Database::Prepare(sql, &statement, "adding sale")) {
+    sqlite3_bind_text(statement, 1, productName.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(statement, 2, clientFirstName.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(statement, 3, clientLastName.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(statement, 4, salesRepresentativeFirstName.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(statement, 5, salesRepresentativeLastName.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(statement, 6, month.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(statement, 7, day);
+    sqlite3_bind_int(statement, 8, year);
+
+    Database::StepDone(statement, "adding sale");
+    sqlite3_finalize(statement);
+  }
 
   SaleMenu();
 }
 
 void Sale::SalesFromYear(){
   int inputYear, counter = 0;
-
-  salesFS.open("Sales.txt", ios::in);
+  sqlite3_stmt* statement = nullptr;
 
   cout << "Enter the year: ";
   cin >> inputYear;
 
-  while (!salesFS.eof()){
-    salesFS >> productName >> clientFirstName >>  clientLastName >> salesRepresentativeFirstName >> salesRepresentativeLastName >> month >> day >> year;
-    if(inputYear == year){
-      cout << "Product: " << productName << endl;
-      cout << "Client name: " << clientFirstName << " " << clientLastName << endl;
-      cout << "Sales representative name: " << salesRepresentativeFirstName << " " << salesRepresentativeLastName << endl;
-      cout << "Date: " << month << " " << day << ", " << year << endl;
+  const char* sql =
+    "SELECT product_name, client_first_name, client_last_name, "
+    "sales_rep_first_name, sales_rep_last_name, month, day, year "
+    "FROM sales "
+    "WHERE year = ? "
+    "ORDER BY month, day;";
+
+  if (Database::Prepare(sql, &statement, "listing sales from year")) {
+    sqlite3_bind_int(statement, 1, inputYear);
+
+    while (sqlite3_step(statement) == SQLITE_ROW) {
+      cout << "Product: " << Database::ColumnText(statement, 0) << endl;
+      cout << "Client name: " << Database::ColumnText(statement, 1) << " " << Database::ColumnText(statement, 2) << endl;
+      cout << "Sales representative name: " << Database::ColumnText(statement, 3) << " " << Database::ColumnText(statement, 4) << endl;
+      cout << "Date: " << Database::ColumnText(statement, 5) << " " << sqlite3_column_int(statement, 6) << ", " << sqlite3_column_int(statement, 7) << endl;
       cout << endl;
       counter++;
     }
-  }
 
-  salesFS.close();
+    sqlite3_finalize(statement);
+  }
 
   if (counter == 0){
     cout << "No sales from " << inputYear << endl << endl;
@@ -106,8 +134,7 @@ void Sale::SalesFromYear(){
 void Sale::SalesFromYearFromSpecificClient(){
   int inputYear, counter = 0;
   string inputClientFirstName, inputClientLastName;
-
-  salesFS.open("Sales.txt", ios::in);
+  sqlite3_stmt* statement = nullptr;
 
   cout << "Enter the year: ";
   cin >> inputYear;
@@ -116,19 +143,29 @@ void Sale::SalesFromYearFromSpecificClient(){
   cout << "Enter the client's last name: ";
   cin >> inputClientLastName;
 
-  while (!salesFS.eof()){
-    salesFS >> productName >> clientFirstName >>  clientLastName >> salesRepresentativeFirstName >> salesRepresentativeLastName >> month >> day >> year;
-    if(inputYear == year && inputClientFirstName == clientFirstName && inputClientLastName == clientLastName){
-      cout << "Product: " << productName << endl;
-      cout << "Client name: " << clientFirstName << " " << clientLastName << endl;
-      cout << "Sales representative name: " << salesRepresentativeFirstName << " " << salesRepresentativeLastName << endl;
-      cout << "Date: " << month << " " << day << ", " << year << endl;
+  const char* sql =
+    "SELECT product_name, client_first_name, client_last_name, "
+    "sales_rep_first_name, sales_rep_last_name, month, day, year "
+    "FROM sales "
+    "WHERE year = ? AND client_first_name = ? AND client_last_name = ? "
+    "ORDER BY month, day;";
+
+  if (Database::Prepare(sql, &statement, "listing sales from year and client")) {
+    sqlite3_bind_int(statement, 1, inputYear);
+    sqlite3_bind_text(statement, 2, inputClientFirstName.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(statement, 3, inputClientLastName.c_str(), -1, SQLITE_TRANSIENT);
+
+    while (sqlite3_step(statement) == SQLITE_ROW) {
+      cout << "Product: " << Database::ColumnText(statement, 0) << endl;
+      cout << "Client name: " << Database::ColumnText(statement, 1) << " " << Database::ColumnText(statement, 2) << endl;
+      cout << "Sales representative name: " << Database::ColumnText(statement, 3) << " " << Database::ColumnText(statement, 4) << endl;
+      cout << "Date: " << Database::ColumnText(statement, 5) << " " << sqlite3_column_int(statement, 6) << ", " << sqlite3_column_int(statement, 7) << endl;
       cout << endl;
       counter++;
     }
-  }
 
-  salesFS.close();
+    sqlite3_finalize(statement);
+  }
 
   if (counter == 0){
     cout << "No sales from " << inputYear << " from " << inputClientFirstName << " " << inputClientLastName << endl << endl;
@@ -138,49 +175,49 @@ void Sale::SalesFromYearFromSpecificClient(){
 }
 
 void Sale::ChangeSaleInfo(){
-  fstream tempFS;
+  sqlite3_stmt* statement = nullptr;
   string oldProductName, newProductName, newClientFirstName, newClientLastName, newSalesRepresentativeFirstName, newSalesRepresentativeLastName, newMonth;
-  int newYear, newDay, counter = 0;
+  int newYear, newDay;
 
   cout << "Enter product: ";
   cin >> oldProductName;
+  cout << "Enter the product: ";
+  cin >> newProductName;
+  cout << "Enter the client name (don't add middle name): ";
+  cin >> newClientFirstName >> newClientLastName;
+  cout << "Enter the new sales representative name (don't add middle name): ";
+  cin >> newSalesRepresentativeFirstName >> newSalesRepresentativeLastName;
+  cout << "Enter the month: ";
+  cin >> newMonth;
+  cout << "Enter the day of the month: ";
+  cin >> newDay;
+  cout << "Enter the year: ";
+  cin >> newYear;
 
-  salesFS.open("Sales.txt", ios::in);
-  tempFS.open("TempSales.txt", ios::app | ios::out);
+  const char* sql =
+    "UPDATE sales "
+    "SET product_name = ?, client_first_name = ?, client_last_name = ?, "
+    "sales_rep_first_name = ?, sales_rep_last_name = ?, month = ?, day = ?, year = ? "
+    "WHERE product_name = ?;";
 
-  while(salesFS >> productName >> clientFirstName >>  clientLastName >> salesRepresentativeFirstName >> salesRepresentativeLastName >> month >> day >> year){
-    if (productName != oldProductName){
-      tempFS << productName << " " << clientFirstName << " " << clientLastName << " " << salesRepresentativeFirstName << " " << salesRepresentativeLastName  << " " << month << " " << day << " " << year << endl;
-    }
-    else{
-      cout << "Enter the product: ";
-      cin >> newProductName;
-      cout << "Enter the client name (don't add middle name): ";
-      cin >> newClientFirstName >> newClientLastName;
-      cout << "Enter the new sales representative name (don't add middle name): ";
-      cin >> newSalesRepresentativeFirstName >> newSalesRepresentativeLastName;
-      cout << "Enter the month: ";
-      cin >> newMonth;
-      cout << "Enter the day of the month: ";
-      cin >> day;
-      cout << "Enter the year: ";
-      cin >> newYear;
+  if (Database::Prepare(sql, &statement, "updating sale")) {
+    sqlite3_bind_text(statement, 1, newProductName.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(statement, 2, newClientFirstName.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(statement, 3, newClientLastName.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(statement, 4, newSalesRepresentativeFirstName.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(statement, 5, newSalesRepresentativeLastName.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(statement, 6, newMonth.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(statement, 7, newDay);
+    sqlite3_bind_int(statement, 8, newYear);
+    sqlite3_bind_text(statement, 9, oldProductName.c_str(), -1, SQLITE_TRANSIENT);
 
-      tempFS << newProductName << " " << newClientFirstName << " " << newClientLastName << " " << newSalesRepresentativeFirstName << " " << newSalesRepresentativeLastName  << " " << newMonth << " " << newDay << " " << newYear << endl;
+    Database::StepDone(statement, "updating sale");
+    sqlite3_finalize(statement);
 
-      counter++;
+    if (sqlite3_changes(Database::Connection()) == 0){
+      cout << "Invalid sale" << endl << endl;
     }
   }
-
-  if (counter == 0){
-    cout << "Invalid sale" << endl << endl;
-  }
-
-  salesFS.close();
-  tempFS.close();
-  
-  remove("Sales.txt");
-  rename("TempSales.txt", "Sales.txt");
 
   SaleMenu();
 }

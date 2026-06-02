@@ -1,6 +1,5 @@
 #pragma once
 
-#include <fstream>
 #include <string>
 
 class SalesRepresentative{
@@ -15,5 +14,4 @@ class SalesRepresentative{
   private:
     std::string firstName, lastName, shortAddress, emailAddress;
     int sales;
-    std::fstream salesRepresentativesFS;
 };

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <fstream>
 #include <string>
 
 class Product{
@@ -15,5 +14,4 @@ class Product{
   private:
     std::string name, inverterType, battery;
     int price, sales, wattage;
-    std::fstream productsFS;
 };

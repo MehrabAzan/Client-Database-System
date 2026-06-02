@@ -1,6 +1,6 @@
 #include "Product.h"
+#include "Database.h"
 #include <cstdlib>
-#include <cstdio>
 #include <iostream>
 
 using namespace std;
@@ -27,37 +27,44 @@ void Product::ProductMenu(){
     case 1:{
       system("cls");
       PrintProducts();
+      break;
     }
     case 2:{
       system("cls");
       PrintProduct();
+      break;
     }
     case 3:{
       system("cls");
       AddProduct();
+      break;
     }
     case 4:{
       system("cls");
       ChangeProductInfo();
+      break;
     }
     case 5:{
       system("cls");
       MonthlySalesReport();
+      break;
     }
     case 6:{
       system("cls");
       MainMenu();
+      break;
     }
     default:{
       system("cls");
       cout << "Invalid option" << endl;
       ProductMenu();
+      break;
     }
   }
 }
 
 void Product::AddProduct(){
-  productsFS.open("Products.txt", ios::app);
+  sqlite3_stmt* statement = nullptr;
 
   cout << "Enter the name: ";
   cin >> name;
@@ -72,37 +79,50 @@ void Product::AddProduct(){
   cout << "Does this have a battery (only enter true or false): ";
   cin >> battery;
 
-  productsFS << name << " " << price << " " << wattage << " " << inverterType << " " << battery << " " << sales << endl;
+  const char* sql =
+    "INSERT INTO products (name, price, wattage, inverter_type, battery, sales) "
+    "VALUES (?, ?, ?, ?, ?, ?);";
 
-  productsFS.close();
+  if (Database::Prepare(sql, &statement, "adding product")) {
+    sqlite3_bind_text(statement, 1, name.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(statement, 2, price);
+    sqlite3_bind_int(statement, 3, wattage);
+    sqlite3_bind_text(statement, 4, inverterType.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(statement, 5, battery.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(statement, 6, sales);
+
+    Database::StepDone(statement, "adding product");
+    sqlite3_finalize(statement);
+  }
 
   ProductMenu();
 }
 
 void Product::PrintProducts(){
-  int temp = 1;
+  sqlite3_stmt* statement = nullptr;
+  int counter = 0;
 
-  productsFS.open("Products.txt", ios::in);
+  const char* sql =
+    "SELECT name, price, wattage, inverter_type, battery, sales "
+    "FROM products "
+    "ORDER BY name;";
 
-  if (!productsFS){
-    cout << "No products in the database";
-    productsFS.close();
-  }
-
-  if (productsFS.is_open()){
-    while (productsFS >> name >> price >> wattage >> inverterType >> battery >> sales){
-      cout << "Name: " << name << endl;
-      cout << "Price: $" << price << endl;
-      cout << "Wattage: " << wattage << endl;
-      cout << "Inverter Type: " << inverterType << endl;
-      cout << "Battery: " << battery << endl;
-      cout << "Sales: $" << sales << endl;
+  if (Database::Prepare(sql, &statement, "listing products")) {
+    while (sqlite3_step(statement) == SQLITE_ROW) {
+      cout << "Name: " << Database::ColumnText(statement, 0) << endl;
+      cout << "Price: $" << sqlite3_column_int(statement, 1) << endl;
+      cout << "Wattage: " << sqlite3_column_int(statement, 2) << endl;
+      cout << "Inverter Type: " << Database::ColumnText(statement, 3) << endl;
+      cout << "Battery: " << Database::ColumnText(statement, 4) << endl;
+      cout << "Sales: $" << sqlite3_column_int(statement, 5) << endl;
       cout << endl;
+      counter++;
     }
-    productsFS.close();
+
+    sqlite3_finalize(statement);
   }
 
-  if (temp == 0){
+  if (counter == 0){
     cout << "No products in the database" << endl;
   }
 
@@ -111,110 +131,114 @@ void Product::PrintProducts(){
 
 void Product::PrintProduct(){
   string inputName;
-  int counter = 0;
-
-  productsFS.open("Products.txt", ios::in);
+  sqlite3_stmt* statement = nullptr;
 
   cout << "Enter the product: ";
   cin >> inputName;
 
-  while (!productsFS.eof()){
-    productsFS >> name >> price >> wattage >> inverterType >> battery >> sales;
-    if (name == inputName){
-      cout << "Name: " << name << endl;
-      cout << "Price: $" << price << endl;
-      cout << "Wattage: " << wattage << endl;
-      cout << "Inverter Type: " << inverterType << endl;
-      cout << "Battery: " << battery << endl;
-      cout << "Sales: $" << sales << endl << endl;
-      counter++;
-      break;
+  const char* sql =
+    "SELECT name, price, wattage, inverter_type, battery, sales "
+    "FROM products "
+    "WHERE name = ?;";
+
+  if (Database::Prepare(sql, &statement, "finding product")) {
+    sqlite3_bind_text(statement, 1, inputName.c_str(), -1, SQLITE_TRANSIENT);
+
+    if (sqlite3_step(statement) == SQLITE_ROW) {
+      cout << "Name: " << Database::ColumnText(statement, 0) << endl;
+      cout << "Price: $" << sqlite3_column_int(statement, 1) << endl;
+      cout << "Wattage: " << sqlite3_column_int(statement, 2) << endl;
+      cout << "Inverter Type: " << Database::ColumnText(statement, 3) << endl;
+      cout << "Battery: " << Database::ColumnText(statement, 4) << endl;
+      cout << "Sales: $" << sqlite3_column_int(statement, 5) << endl << endl;
     }
-  }
+    else {
+      cout << "Invalid product" << endl << endl;
+    }
 
-  productsFS.close();
-
-  if (counter == 0){
-    cout << "Invalid product" << endl << endl;
+    sqlite3_finalize(statement);
   }
 
   ProductMenu();
 }
 
 void Product::ChangeProductInfo(){
-  fstream tempFS;
+  sqlite3_stmt* statement = nullptr;
   string oldName, newName, newInverterType, newBattery;
-  int newSales, newPrice, newWattage, counter = 0;
+  int newSales, newPrice, newWattage;
 
   cout << "Enter the old name: ";
   cin >> oldName;
+  cout << "Enter the new name: ";
+  cin >> newName;
+  cout << "Enter the new price: ";
+  cin >> newPrice;
+  cout << "Enter the new wattage: ";
+  cin >> newWattage;
+  cout << "Enter the new inverter type: ";
+  cin >> newInverterType;
+  cout << "Enter if it has a battery or not: ";
+  cin >> newBattery;
+  cout << "Enter new sales amount: $";
+  cin >> newSales;
 
-  productsFS.open("Products.txt", ios::in);
-  tempFS.open("TempProducts.txt", ios::app | ios::out);
+  const char* sql =
+    "UPDATE products "
+    "SET name = ?, price = ?, wattage = ?, inverter_type = ?, battery = ?, sales = ? "
+    "WHERE name = ?;";
 
-  while(productsFS >> name >> price >> wattage >> inverterType >> battery >> sales){
-    if (name != oldName){
-      tempFS << name << " " << price << " " << wattage << " " << inverterType << " " << battery << " " << sales << endl;
-    }
-    else{
-      cout << "Enter the new name: ";
-      cin >> newName;
-      cout << "Enter the new price: ";
-      cin >> newPrice;
-      cout << "Enter the new wattage: ";
-      cin >> newWattage;
-      cout << "Enter the new inverter type: ";
-      cin >> newInverterType;
-      cout << "Enter if it has a battery or not: ";
-      cin >> newBattery;
-      cout << "Enter new sales amount: $";
-      cin >> newSales;
+  if (Database::Prepare(sql, &statement, "updating product")) {
+    sqlite3_bind_text(statement, 1, newName.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(statement, 2, newPrice);
+    sqlite3_bind_int(statement, 3, newWattage);
+    sqlite3_bind_text(statement, 4, newInverterType.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(statement, 5, newBattery.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(statement, 6, newSales);
+    sqlite3_bind_text(statement, 7, oldName.c_str(), -1, SQLITE_TRANSIENT);
 
-      tempFS << newName << " " << newPrice << " " << newWattage << " " << newInverterType << " " << newBattery << " " << newSales << endl;
+    Database::StepDone(statement, "updating product");
+    sqlite3_finalize(statement);
 
-      counter++;
+    if (sqlite3_changes(Database::Connection()) == 0){
+      cout << "Invalid product" << endl << endl;
     }
   }
-
-  if (counter == 0){
-    cout << "Invalid product" << endl << endl;
-  }
-
-  productsFS.close();
-  tempFS.close();
-  
-  remove("Products.txt");
-  rename("TempProducts.txt", "Products.txt");
 
   ProductMenu();
 }
 
 void Product::MonthlySalesReport(){
-  string inputMonth, clientFirstName, clientLastName, productName, salesRepresentativeFirstName, salesRepresentativeLastName, month;
-  int inputYear, year, day, counter = 0;
-  fstream salesFS;
-
-  salesFS.open("Sales.txt", ios::in);
+  string inputMonth;
+  int inputYear, counter = 0;
+  sqlite3_stmt* statement = nullptr;
 
   cout << "Enter the month: ";
   cin >> inputMonth;
   cout << "Enter the year: ";
   cin >> inputYear;
 
-  while (!salesFS.eof()){
-    salesFS >> productName >> clientFirstName >>  clientLastName >> salesRepresentativeFirstName >> salesRepresentativeLastName >> month >> day >> year;
+  const char* sql =
+    "SELECT product_name, client_first_name, client_last_name, "
+    "sales_rep_first_name, sales_rep_last_name, month, day, year "
+    "FROM sales "
+    "WHERE month = ? AND year = ? "
+    "ORDER BY day;";
 
-    if (month == inputMonth && inputYear == year){
-      cout << "Product: " << productName << endl;
-      cout << "Client name: " << clientFirstName << " " << clientLastName << endl;
-      cout << "Sales representative name: " << salesRepresentativeFirstName << " " << salesRepresentativeLastName << endl;
-      cout << "Date: " << month << " " << day << ", " << year << endl;
+  if (Database::Prepare(sql, &statement, "building monthly sales report")) {
+    sqlite3_bind_text(statement, 1, inputMonth.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(statement, 2, inputYear);
+
+    while (sqlite3_step(statement) == SQLITE_ROW) {
+      cout << "Product: " << Database::ColumnText(statement, 0) << endl;
+      cout << "Client name: " << Database::ColumnText(statement, 1) << " " << Database::ColumnText(statement, 2) << endl;
+      cout << "Sales representative name: " << Database::ColumnText(statement, 3) << " " << Database::ColumnText(statement, 4) << endl;
+      cout << "Date: " << Database::ColumnText(statement, 5) << " " << sqlite3_column_int(statement, 6) << ", " << sqlite3_column_int(statement, 7) << endl;
       cout << endl;
       counter++;
     }
-  }
 
-  salesFS.close();
+    sqlite3_finalize(statement);
+  }
 
   if (counter == 0){
     cout << "No sales made this month" << endl << endl;

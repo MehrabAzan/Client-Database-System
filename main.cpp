@@ -1,5 +1,6 @@
 #include <cstdlib>
 #include <iostream>
+#include "Database.h"
 #include "Client.h"
 #include "Product.h"
 #include "Sale.h"
@@ -27,24 +28,29 @@ void MainMenu(){
       system("cls");
       Client client;
       client.ClientMenu();
+      break;
     }
     case 2:{
       system("cls");
       SalesRepresentative salesRepresentative;
       salesRepresentative.SalesRepresentativeMenu();
+      break;
     }
     case 3:{
       system("cls");
       Product product;
       product.ProductMenu();
+      break;
     }
     case 4:{
       system("cls");
       Sale sale;
       sale.SaleMenu();
+      break;
     }
     case 5:{
       system("cls");
+      Database::Close();
       exit(0);
       break;
     }
@@ -56,7 +62,12 @@ void MainMenu(){
 }
 
 int main(){
+  if (!Database::Initialize()) {
+    return 1;
+  }
+
   MainMenu();
+  Database::Close();
 
   return 0;
 }
