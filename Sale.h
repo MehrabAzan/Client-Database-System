@@ -2,7 +2,7 @@
 
 #include <string>
 
-class Sale{
+class Sale {
   public:
     void SaleMenu();
     void AddSale();

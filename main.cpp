@@ -8,7 +8,7 @@
 
 using namespace std;
 
-void MainMenu(){
+void MainMenu() {
   int choice;
 
   cout << "SeerSolar" << endl;
@@ -23,7 +23,7 @@ void MainMenu(){
 
   cin >> choice;
 
-  switch(choice){
+  switch(choice) {
     case 1:{
       system("cls");
       Client client;
@@ -61,13 +61,11 @@ void MainMenu(){
   }
 }
 
-int main(){
+int main() {
   if (!Database::Initialize()) {
     return 1;
   }
 
   MainMenu();
   Database::Close();
-
-  return 0;
 }

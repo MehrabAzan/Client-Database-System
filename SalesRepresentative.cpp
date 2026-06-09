@@ -7,7 +7,7 @@ using namespace std;
 
 void MainMenu();
 
-void SalesRepresentative::SalesRepresentativeMenu(){
+void SalesRepresentative::SalesRepresentativeMenu() {
   int choice;
 
   cout << "Sales Representatives" << endl;
@@ -23,7 +23,7 @@ void SalesRepresentative::SalesRepresentativeMenu(){
 
   cin >> choice;
 
-  switch(choice){
+  switch(choice) {
     case 1:{
       system("cls");
       PrintSalesRepresentatives();
@@ -63,7 +63,7 @@ void SalesRepresentative::SalesRepresentativeMenu(){
   }
 }
 
-void SalesRepresentative::AddSalesRepresentative(){
+void SalesRepresentative::AddSalesRepresentative() {
   sqlite3_stmt* statement = nullptr;
 
   cout << "Enter the name (don't add middle name): ";
@@ -93,7 +93,7 @@ void SalesRepresentative::AddSalesRepresentative(){
   SalesRepresentativeMenu();
 }
 
-void SalesRepresentative::PrintSalesRepresentatives(){
+void SalesRepresentative::PrintSalesRepresentatives() {
   sqlite3_stmt* statement = nullptr;
   int counter = 0;
 
@@ -115,14 +115,14 @@ void SalesRepresentative::PrintSalesRepresentatives(){
     sqlite3_finalize(statement);
   }
 
-  if (counter == 0){
+  if (counter == 0) {
     cout << "No sales representatives in the database" << endl;
   }
 
   SalesRepresentativeMenu();
 }
 
-void SalesRepresentative::PrintSalesRepresentative(){
+void SalesRepresentative::PrintSalesRepresentative() {
   string inputEmailAddress;
   sqlite3_stmt* statement = nullptr;
 
@@ -153,7 +153,7 @@ void SalesRepresentative::PrintSalesRepresentative(){
   SalesRepresentativeMenu();
 }
 
-void SalesRepresentative::ChangeSalesRepresentativeInfo(){
+void SalesRepresentative::ChangeSalesRepresentativeInfo() {
   sqlite3_stmt* statement = nullptr;
   string oldEmailAddress, newFirstName, newLastName, newShortAddress, newEmailAddress;
   int newSales;
@@ -185,7 +185,7 @@ void SalesRepresentative::ChangeSalesRepresentativeInfo(){
     Database::StepDone(statement, "updating sales representative");
     sqlite3_finalize(statement);
 
-    if (sqlite3_changes(Database::Connection()) == 0){
+    if (sqlite3_changes(Database::Connection()) == 0) {
       cout << "Invalid sales representative" << endl << endl;
     }
   }
@@ -193,7 +193,7 @@ void SalesRepresentative::ChangeSalesRepresentativeInfo(){
   SalesRepresentativeMenu();
 }
 
-void SalesRepresentative::SalesBonus(){
+void SalesRepresentative::SalesBonus() {
   int ppw, commissionRate;
 
   cout << "What is the price per watt: $";

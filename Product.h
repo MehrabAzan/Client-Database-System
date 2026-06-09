@@ -2,7 +2,7 @@
 
 #include <string>
 
-class Product{
+class Product {
   public:
     void ProductMenu();
     void AddProduct();

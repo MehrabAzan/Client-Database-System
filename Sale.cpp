@@ -7,7 +7,7 @@ using namespace std;
 
 void MainMenu();
 
-void Sale::SaleMenu(){
+void Sale::SaleMenu() {
   int choice;
 
   cout << "Sales" << endl;
@@ -22,7 +22,7 @@ void Sale::SaleMenu(){
 
   cin >> choice;
 
-  switch(choice){
+  switch(choice) {
     case 1:{
       system("cls");
       SalesFromYear();
@@ -57,7 +57,7 @@ void Sale::SaleMenu(){
   }
 }
 
-void Sale::AddSale(){
+void Sale::AddSale() {
   sqlite3_stmt* statement = nullptr;
 
   cout << "Enter the client (don't add middle name): ";
@@ -95,7 +95,7 @@ void Sale::AddSale(){
   SaleMenu();
 }
 
-void Sale::SalesFromYear(){
+void Sale::SalesFromYear() {
   int inputYear, counter = 0;
   sqlite3_stmt* statement = nullptr;
 
@@ -124,14 +124,14 @@ void Sale::SalesFromYear(){
     sqlite3_finalize(statement);
   }
 
-  if (counter == 0){
+  if (counter == 0) {
     cout << "No sales from " << inputYear << endl << endl;
   }
 
   SaleMenu();
 }
 
-void Sale::SalesFromYearFromSpecificClient(){
+void Sale::SalesFromYearFromSpecificClient() {
   int inputYear, counter = 0;
   string inputClientFirstName, inputClientLastName;
   sqlite3_stmt* statement = nullptr;
@@ -167,14 +167,14 @@ void Sale::SalesFromYearFromSpecificClient(){
     sqlite3_finalize(statement);
   }
 
-  if (counter == 0){
+  if (counter == 0) {
     cout << "No sales from " << inputYear << " from " << inputClientFirstName << " " << inputClientLastName << endl << endl;
   }
 
   SaleMenu();
 }
 
-void Sale::ChangeSaleInfo(){
+void Sale::ChangeSaleInfo() {
   sqlite3_stmt* statement = nullptr;
   string oldProductName, newProductName, newClientFirstName, newClientLastName, newSalesRepresentativeFirstName, newSalesRepresentativeLastName, newMonth;
   int newYear, newDay;
@@ -214,7 +214,7 @@ void Sale::ChangeSaleInfo(){
     Database::StepDone(statement, "updating sale");
     sqlite3_finalize(statement);
 
-    if (sqlite3_changes(Database::Connection()) == 0){
+    if (sqlite3_changes(Database::Connection()) == 0) {
       cout << "Invalid sale" << endl << endl;
     }
   }

@@ -7,7 +7,7 @@ using namespace std;
 
 void MainMenu();
 
-void Product::ProductMenu(){
+void Product::ProductMenu() {
   int choice;
 
   cout << "Products" << endl;
@@ -23,7 +23,7 @@ void Product::ProductMenu(){
 
   cin >> choice;
 
-  switch(choice){
+  switch(choice) {
     case 1:{
       system("cls");
       PrintProducts();
@@ -63,7 +63,7 @@ void Product::ProductMenu(){
   }
 }
 
-void Product::AddProduct(){
+void Product::AddProduct() {
   sqlite3_stmt* statement = nullptr;
 
   cout << "Enter the name: ";
@@ -98,7 +98,7 @@ void Product::AddProduct(){
   ProductMenu();
 }
 
-void Product::PrintProducts(){
+void Product::PrintProducts() {
   sqlite3_stmt* statement = nullptr;
   int counter = 0;
 
@@ -122,14 +122,14 @@ void Product::PrintProducts(){
     sqlite3_finalize(statement);
   }
 
-  if (counter == 0){
+  if (counter == 0) {
     cout << "No products in the database" << endl;
   }
 
   ProductMenu();
 }
 
-void Product::PrintProduct(){
+void Product::PrintProduct() {
   string inputName;
   sqlite3_stmt* statement = nullptr;
 
@@ -162,7 +162,7 @@ void Product::PrintProduct(){
   ProductMenu();
 }
 
-void Product::ChangeProductInfo(){
+void Product::ChangeProductInfo() {
   sqlite3_stmt* statement = nullptr;
   string oldName, newName, newInverterType, newBattery;
   int newSales, newPrice, newWattage;
@@ -199,7 +199,7 @@ void Product::ChangeProductInfo(){
     Database::StepDone(statement, "updating product");
     sqlite3_finalize(statement);
 
-    if (sqlite3_changes(Database::Connection()) == 0){
+    if (sqlite3_changes(Database::Connection()) == 0) {
       cout << "Invalid product" << endl << endl;
     }
   }
@@ -207,7 +207,7 @@ void Product::ChangeProductInfo(){
   ProductMenu();
 }
 
-void Product::MonthlySalesReport(){
+void Product::MonthlySalesReport() {
   string inputMonth;
   int inputYear, counter = 0;
   sqlite3_stmt* statement = nullptr;
@@ -240,7 +240,7 @@ void Product::MonthlySalesReport(){
     sqlite3_finalize(statement);
   }
 
-  if (counter == 0){
+  if (counter == 0) {
     cout << "No sales made this month" << endl << endl;
   }
 

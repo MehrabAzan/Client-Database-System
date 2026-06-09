@@ -2,7 +2,7 @@
 
 #include <string>
 
-class Client{
+class Client {
   public:
     void ClientMenu();
     void AddClient();

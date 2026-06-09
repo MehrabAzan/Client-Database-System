@@ -2,7 +2,7 @@
 
 #include <string>
 
-class SalesRepresentative{
+class SalesRepresentative {
   public:
     void SalesRepresentativeMenu();
     void AddSalesRepresentative();

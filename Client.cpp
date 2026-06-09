@@ -7,7 +7,7 @@ using namespace std;
 
 void MainMenu();
 
-void Client::ClientMenu(){
+void Client::ClientMenu() {
   int choice;
 
   cout << "Clients" << endl;
@@ -22,7 +22,7 @@ void Client::ClientMenu(){
 
   cin >> choice;
 
-  switch(choice){
+  switch(choice) {
     case 1:{
       system("cls");
       PrintClients();
@@ -57,7 +57,7 @@ void Client::ClientMenu(){
   }
 }
 
-void Client::AddClient(){
+void Client::AddClient() {
   sqlite3_stmt* statement = nullptr;
 
   cout << "Enter the name (don't add middle name): ";
@@ -87,7 +87,7 @@ void Client::AddClient(){
   ClientMenu();
 }
 
-void Client::PrintClients(){
+void Client::PrintClients() {
   sqlite3_stmt* statement = nullptr;
   int counter = 0;
 
@@ -109,14 +109,14 @@ void Client::PrintClients(){
     sqlite3_finalize(statement);
   }
 
-  if (counter == 0){
+  if (counter == 0) {
     cout << "No clients in the database" << endl;
   }
 
   ClientMenu();
 }
 
-void Client::PrintClient(){
+void Client::PrintClient() {
   string inputEmailAddress;
   sqlite3_stmt* statement = nullptr;
 
@@ -147,7 +147,7 @@ void Client::PrintClient(){
   ClientMenu();
 }
 
-void Client::ChangeClientInfo(){
+void Client::ChangeClientInfo() {
   sqlite3_stmt* statement = nullptr;
   string oldEmailAddress, newFirstName, newLastName, newShortAddress, newEmailAddress;
   int newSales;
@@ -179,7 +179,7 @@ void Client::ChangeClientInfo(){
     Database::StepDone(statement, "updating client");
     sqlite3_finalize(statement);
 
-    if (sqlite3_changes(Database::Connection()) == 0){
+    if (sqlite3_changes(Database::Connection()) == 0) {
       cout << "Invalid client" << endl << endl;
     }
   }
